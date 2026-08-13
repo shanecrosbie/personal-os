@@ -113,7 +113,7 @@ with tab_overview:
     with col2:
         st.metric(label="Domain", value="67whatever.au")
     with col3:
-        st.metric(label="AI Model", value="Gemini 2.5 Flash")
+        st.metric(label="AI Model", value="Gemini 1.5 Flash")
 
     st.divider()
 
@@ -167,7 +167,7 @@ with tab_fitness:
                     """
                     try:
                         response = gemini_client.models.generate_content(
-                            model="gemini-2.5-flash",
+                            model="gemini-1.5-flash",
                             contents=prompt
                         )
                         cleaned_json = clean_json_response(response.text)
@@ -243,7 +243,7 @@ with tab_fitness:
                     """
                     try:
                         response = gemini_client.models.generate_content(
-                            model="gemini-2.5-flash",
+                            model="gemini-1.5-flash",
                             contents=prompt
                         )
                         cleaned_json = clean_json_response(response.text)
@@ -264,3 +264,28 @@ with tab_fitness:
 
     st.divider()
     st.subheader("📋 Recent Hevy History")
+    if st.button("Sync Recent History"):
+        workouts = fetch_hevy_workouts()
+        if workouts:
+            for w in workouts:
+                with st.expander(f"Workout: {w.get('title', 'Untitled')} ({w.get('start_time', '')[:10]})"):
+                    st.write(f"**Duration:** {w.get('duration_seconds', 0) // 60} mins")
+                    st.write(f"**Exercises Logged:** {len(w.get('exercises', []))}")
+
+# --- TAB 3: AI ASSISTANT ---
+with tab_ai:
+    st.subheader("🤖 Gemini Assistant")
+    user_prompt = st.text_area("Ask your personal OS anything:", placeholder="Summarize my day or suggest a training tweak...")
+    
+    if st.button("Ask Gemini"):
+        if user_prompt:
+            with st.spinner("Thinking..."):
+                try:
+                    response = gemini_client.models.generate_content(
+                        model="gemini-1.5-flash",
+                        contents=user_prompt
+                    )
+                    st.markdown("### Response:")
+                    st.write(response.text)
+                except Exception as e:
+                    st.error(f"Gemini API Error: {e}")
