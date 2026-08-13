@@ -113,7 +113,7 @@ with tab_overview:
     with col2:
         st.metric(label="Domain", value="67whatever.au")
     with col3:
-        st.metric(label="AI Model", value="Gemini 1.5 Flash")
+        st.metric(label="AI Model", value="Gemini 2.5 Flash")
 
     st.divider()
 
@@ -167,7 +167,7 @@ with tab_fitness:
                     """
                     try:
                         response = gemini_client.models.generate_content(
-                            model="gemini-1.5-flash",
+                            model="gemini-2.5-flash",
                             contents=prompt
                         )
                         cleaned_json = clean_json_response(response.text)
@@ -243,7 +243,7 @@ with tab_fitness:
                     """
                     try:
                         response = gemini_client.models.generate_content(
-                            model="gemini-1.5-flash",
+                            model="gemini-2.5-flash",
                             contents=prompt
                         )
                         cleaned_json = clean_json_response(response.text)
@@ -282,7 +282,7 @@ with tab_ai:
             with st.spinner("Thinking..."):
                 try:
                     response = gemini_client.models.generate_content(
-                        model="gemini-1.5-flash",
+                        model="gemini-2.5-flash",
                         contents=user_prompt
                     )
                     st.markdown("### Response:")
