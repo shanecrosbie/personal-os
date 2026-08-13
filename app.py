@@ -166,11 +166,12 @@ with tab_fitness:
                     ]
                     """
                     try:
-                        response = gemini_client.models.generate_content(
+                        # Using new Interactions API endpoint
+                        interaction = gemini_client.create(
                             model="gemini-2.5-flash",
-                            contents=prompt
+                            input=prompt
                         )
-                        cleaned_json = clean_json_response(response.text)
+                        cleaned_json = clean_json_response(interaction.output_text)
                         routines_list = json.loads(cleaned_json)
                         
                         st.write("### Parsed Routines Preview:")
@@ -242,11 +243,11 @@ with tab_fitness:
                     }}
                     """
                     try:
-                        response = gemini_client.models.generate_content(
+                        interaction = gemini_client.create(
                             model="gemini-2.5-flash",
-                            contents=prompt
+                            input=prompt
                         )
-                        cleaned_json = clean_json_response(response.text)
+                        cleaned_json = clean_json_response(interaction.output_text)
                         workout_data = json.loads(cleaned_json)
                         
                         api_key = st.secrets.get("HEVY_API_KEY")
@@ -260,37 +261,3 @@ with tab_fitness:
                             st.error(f"Hevy API Error ({res.status_code}): {res.text}")
 
                     except Exception as e:
-                        st.error(f"Error logging workout: {e}")
-
-    st.divider()
-    st.subheader("📋 Recent Hevy History")
-    if st.button("Sync Recent History"):
-        workouts = fetch_hevy_workouts()
-        if workouts:
-            for w in workouts:
-                title = w.get("title", "Untitled")
-                date_str = str(w.get("start_time", ""))[:10]
-                duration_mins = w.get("duration_seconds", 0) // 60
-                exercise_count = len(w.get("exercises", []))
-                
-                with st.expander(title + " (" + date_str + ")"):
-                    st.write(f"**Duration:** {duration_mins} mins")
-                    st.write(f"**Exercises Logged:** {exercise_count}")
-
-# --- TAB 3: AI ASSISTANT ---
-with tab_ai:
-    st.subheader("🤖 Gemini Assistant")
-    user_prompt = st.text_area("Ask your personal OS anything:", placeholder="Summarize my day or suggest a training tweak...")
-    
-    if st.button("Ask Gemini"):
-        if user_prompt:
-            with st.spinner("Thinking..."):
-                try:
-                    response = gemini_client.models.generate_content(
-                        model="gemini-2.5-flash",
-                        contents=user_prompt
-                    )
-                    st.markdown("### Response:")
-                    st.write(response.text)
-                except Exception as e:
-                    st.error(f"Gemini API Error: {e}")
