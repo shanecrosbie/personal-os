@@ -58,6 +58,24 @@ gemini_client = init_gemini()
 # ==========================================
 # 3. HELPER FUNCTIONS
 # ==========================================
+def call_gemini_safe(prompt_text):
+    """Try models in sequence to prevent 404 errors."""
+    models_to_try = ["gemini-2.5-flash", "gemini-1.5-flash", "gemini-2.0-flash"]
+    last_error = None
+    
+    for m in models_to_try:
+        try:
+            res = gemini_client.models.generate_content(
+                model=m,
+                contents=prompt_text
+            )
+            return res.text
+        except Exception as e:
+            last_error = e
+            continue
+            
+    raise Exception(f"All models failed. Last error: {last_error}")
+
 def fetch_hevy_workouts():
     api_key = st.secrets.get("HEVY_API_KEY")
     if not api_key:
@@ -113,7 +131,7 @@ with tab_overview:
     with col2:
         st.metric(label="Domain", value="67whatever.au")
     with col3:
-        st.metric(label="AI Model", value="Gemini 2.5 Flash")
+        st.metric(label="AI Model", value="Gemini Auto-Fallback")
 
     st.divider()
 
@@ -166,11 +184,8 @@ with tab_fitness:
                     ]
                     """
                     try:
-                        response = gemini_client.models.generate_content(
-                            model="gemini-2.5-flash",
-                            contents=prompt
-                        )
-                        cleaned_json = clean_json_response(response.text)
+                        raw_response = call_gemini_safe(prompt)
+                        cleaned_json = clean_json_response(raw_response)
                         routines_list = json.loads(cleaned_json)
                         
                         st.write("### Parsed Routines Preview:")
@@ -242,11 +257,8 @@ with tab_fitness:
                     }}
                     """
                     try:
-                        response = gemini_client.models.generate_content(
-                            model="gemini-2.5-flash",
-                            contents=prompt
-                        )
-                        cleaned_json = clean_json_response(response.text)
+                        raw_response = call_gemini_safe(prompt)
+                        cleaned_json = clean_json_response(raw_response)
                         workout_data = json.loads(cleaned_json)
                         
                         api_key = st.secrets.get("HEVY_API_KEY")
@@ -273,4 +285,21 @@ with tab_fitness:
                 duration_mins = w.get("duration_seconds", 0) // 60
                 exercise_count = len(w.get("exercises", []))
                 
-                with st.expander(title + " (" + date_str + ")
+                with st.expander(title + " (" + date_str + ")"):
+                    st.write(f"**Duration:** {duration_mins} mins")
+                    st.write(f"**Exercises Logged:** {exercise_count}")
+
+# --- TAB 3: AI ASSISTANT ---
+with tab_ai:
+    st.subheader("🤖 Gemini Assistant")
+    user_prompt = st.text_area("Ask your personal OS anything:", placeholder="Summarize my day or suggest a training tweak...")
+    
+    if st.button("Ask Gemini"):
+        if user_prompt:
+            with st.spinner("Thinking..."):
+                try:
+                    response_text = call_gemini_safe(user_prompt)
+                    st.markdown("### Response:")
+                    st.write(response_text)
+                except Exception as e:
+                    st.error(f"Gemini API Error: {e}")
