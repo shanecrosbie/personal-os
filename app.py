@@ -84,6 +84,17 @@ def fetch_exercise_templates():
         st.error(f"Error fetching templates: {e}")
     return []
 
+def clean_json_response(text):
+    """Safely remove markdown code blocks from AI response."""
+    cleaned = text.strip()
+    if cleaned.startswith("```json"):
+        cleaned = cleaned[7:]
+    if cleaned.startswith("```"):
+        cleaned = cleaned[3:]
+    if cleaned.endswith("```"):
+        cleaned = cleaned[:-3]
+    return cleaned.strip()
+
 # ==========================================
 # 4. DASHBOARD INTERFACE
 # ==========================================
@@ -135,7 +146,7 @@ with tab_fitness:
                     Program Text:
                     {program_text}
                     
-                    Respond ONLY with a valid JSON array of routine objects matching this exact structure (no markdown styling, no code blocks):
+                    Respond ONLY with a valid JSON array of routine objects matching this exact structure:
                     [
                       {{
                         "routine": {{
@@ -159,7 +170,7 @@ with tab_fitness:
                             model="gemini-2.5-flash",
                             contents=prompt
                         )
-                        cleaned_json = response.text.replace("```json", "").replace("```", "").strip()
+                        cleaned_json = clean_json_response(response.text)
                         routines_list = json.loads(cleaned_json)
                         
                         st.write("### Parsed Routines Preview:")
@@ -171,7 +182,7 @@ with tab_fitness:
                         success_count = 0
                         with st.spinner("Pushing routine templates to Hevy..."):
                             for r_item in routines_list:
-                                res = requests.post("https://api.hevyapp.com/v1/routines", headers=headers, json=r_item)
+                                res = requests.post("[https://api.hevyapp.com/v1/routines](https://api.hevyapp.com/v1/routines)", headers=headers, json=r_item)
                                 if res.status_code in [200, 201]:
                                     success_count += 1
                                 else:
@@ -211,7 +222,7 @@ with tab_fitness:
                     User input:
                     {raw_workout_text}
                     
-                    Respond ONLY with a raw JSON object (no markdown, no code blocks):
+                    Respond ONLY with a raw JSON object:
                     {{
                       "workout": {{
                         "title": "Workout Title",
@@ -235,4 +246,21 @@ with tab_fitness:
                             model="gemini-2.5-flash",
                             contents=prompt
                         )
-                        cleaned_json = response.text.replace("```json", "").replace("
+                        cleaned_json = clean_json_response(response.text)
+                        workout_data = json.loads(cleaned_json)
+                        
+                        api_key = st.secrets.get("HEVY_API_KEY")
+                        headers = {"api-key": api_key, "accept": "application/json", "Content-Type": "application/json"}
+                        
+                        res = requests.post("[https://api.hevyapp.com/v1/workouts](https://api.hevyapp.com/v1/workouts)", headers=headers, json=workout_data)
+                        if res.status_code in [200, 201]:
+                            st.balloons()
+                            st.success("🎉 Workout logged to Hevy!")
+                        else:
+                            st.error(f"Hevy API Error ({res.status_code}): {res.text}")
+
+                    except Exception as e:
+                        st.error(f"Error logging workout: {e}")
+
+    st.divider()
+    st.subheader("📋 Recent Hevy History")
