@@ -186,7 +186,7 @@ with tab_fitness:
                                 if res.status_code in [200, 201]:
                                     success_count += 1
                                 else:
-                                    st.warning(f"Failed to post {r_item.get('routine', {}).get('title')}: {res.text}")
+                                    st.warning("Failed to post routine: " + str(res.text))
                         
                         if success_count > 0:
                             st.balloons()
@@ -268,5 +268,29 @@ with tab_fitness:
         workouts = fetch_hevy_workouts()
         if workouts:
             for w in workouts:
-                with st.expander(f"Workout: {w.get('title', 'Untitled')} ({w.get('start_time', '')[:10]})"):
-                    st.write(f"**Duration:** {w.get('duration_seconds', 0)
+                title = w.get("title", "Untitled")
+                date_str = str(w.get("start_time", ""))[:10]
+                duration_mins = w.get("duration_seconds", 0) // 60
+                exercise_count = len(w.get("exercises", []))
+                
+                with st.expander(title + " (" + date_str + ")"):
+                    st.write(f"**Duration:** {duration_mins} mins")
+                    st.write(f"**Exercises Logged:** {exercise_count}")
+
+# --- TAB 3: AI ASSISTANT ---
+with tab_ai:
+    st.subheader("🤖 Gemini Assistant")
+    user_prompt = st.text_area("Ask your personal OS anything:", placeholder="Summarize my day or suggest a training tweak...")
+    
+    if st.button("Ask Gemini"):
+        if user_prompt:
+            with st.spinner("Thinking..."):
+                try:
+                    response = gemini_client.models.generate_content(
+                        model="gemini-2.0-flash",
+                        contents=user_prompt
+                    )
+                    st.markdown("### Response:")
+                    st.write(response.text)
+                except Exception as e:
+                    st.error(f"Gemini API Error: {e}")
