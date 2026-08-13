@@ -166,12 +166,11 @@ with tab_fitness:
                     ]
                     """
                     try:
-                        # Using new Interactions API endpoint
-                        interaction = gemini_client.create(
+                        response = gemini_client.models.generate_content(
                             model="gemini-2.5-flash",
-                            input=prompt
+                            contents=prompt
                         )
-                        cleaned_json = clean_json_response(interaction.output_text)
+                        cleaned_json = clean_json_response(response.text)
                         routines_list = json.loads(cleaned_json)
                         
                         st.write("### Parsed Routines Preview:")
@@ -243,11 +242,11 @@ with tab_fitness:
                     }}
                     """
                     try:
-                        interaction = gemini_client.create(
+                        response = gemini_client.models.generate_content(
                             model="gemini-2.5-flash",
-                            input=prompt
+                            contents=prompt
                         )
-                        cleaned_json = clean_json_response(interaction.output_text)
+                        cleaned_json = clean_json_response(response.text)
                         workout_data = json.loads(cleaned_json)
                         
                         api_key = st.secrets.get("HEVY_API_KEY")
@@ -261,3 +260,17 @@ with tab_fitness:
                             st.error(f"Hevy API Error ({res.status_code}): {res.text}")
 
                     except Exception as e:
+                        st.error(f"Error logging workout: {e}")
+
+    st.divider()
+    st.subheader("📋 Recent Hevy History")
+    if st.button("Sync Recent History"):
+        workouts = fetch_hevy_workouts()
+        if workouts:
+            for w in workouts:
+                title = w.get("title", "Untitled")
+                date_str = str(w.get("start_time", ""))[:10]
+                duration_mins = w.get("duration_seconds", 0) // 60
+                exercise_count = len(w.get("exercises", []))
+                
+                with st.expander(title + " (" + date_str + ")
