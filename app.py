@@ -80,7 +80,7 @@ HEVY_TIMEOUT = 30
 
 # You can override this in Streamlit secrets with:
 # GEMINI_MODEL = "gemini-2.5-flash"
-PREFERRED_GEMINI_MODEL = st.secrets.get("GEMINI_MODEL", "gemini-2.5-flash")
+PREFERRED_GEMINI_MODEL = st.secrets.get("GEMINI_MODEL", "gemini-3.6-flash")
 
 
 # ==========================================
@@ -147,7 +147,6 @@ def call_gemini_safe(prompt_text, json_mode=False):
     if json_mode:
         config = types.GenerateContentConfig(
             response_mime_type="application/json",
-            temperature=0,
         )
 
     try:
@@ -159,23 +158,11 @@ def call_gemini_safe(prompt_text, json_mode=False):
     except Exception as first_error:
         # If model discovery selected something unavailable, try the configured
         # model once more. This also gives a useful error if the key is bad.
-        if model != PREFERRED_GEMINI_MODEL:
-            try:
-                response = gemini_client.models.generate_content(
-                    model=PREFERRED_GEMINI_MODEL,
-                    contents=prompt_text,
-                    config=config,
-                )
-            except Exception as second_error:
-                raise RuntimeError(
-                    f"Gemini request failed.\n\n"
-                    f"First model ({model}): {first_error}\n\n"
-                    f"Configured model ({PREFERRED_GEMINI_MODEL}): {second_error}"
-                ) from second_error
-        else:
-            raise RuntimeError(
-                f"Gemini request failed using {PREFERRED_GEMINI_MODEL}: {first_error}"
-            ) from first_error
+        raise RuntimeError(
+            f"Gemini request failed using {model}: {first_error}. "
+            f"Set GEMINI_MODEL to a currently available model such as "
+            f"gemini-3.6-flash if your API project supports it."
+        ) from first_error
 
     text = getattr(response, "text", None)
 
